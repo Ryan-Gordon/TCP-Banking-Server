@@ -3,6 +3,7 @@ package ie.gmit.sw;
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -35,11 +36,17 @@ class ClientServiceThread extends Thread {
   boolean running = true;
   ObjectOutputStream out;
   ObjectInputStream in;
- String name;
-	String address;
-	   String accnum;
-	   String username;
-	   String password;
+  boolean authenticated=false;
+  /*
+   * These are the user variables.
+   * Started by using a Inner class however the varaible within were not thread safe
+   * Local variables are thread safe however.
+   */
+  String name;
+  String address;
+  String accnum;
+  String username;
+  String password;
   
 
   ClientServiceThread(Socket s, int i) {
@@ -75,16 +82,20 @@ class ClientServiceThread extends Thread {
 			{
 				
 				System.out.println("client>"+clientID+"  "+ message);
-				boolean authenticated =false;
+				
 				//if (message.equals("bye"))
 				while(authenticated == false){
 					
-						loginMenu();
+						authenticated = loginMenu();
 						
 						if(message.equals("bye")){
 							break;
 						}
 				
+				}
+				if (authenticated ==true){
+					//presentCustomerMenu
+					message = "bye";
 				}
 				
 				
@@ -103,7 +114,7 @@ class ClientServiceThread extends Thread {
     }
   }
   
-  void loginMenu() throws ClassNotFoundException, IOException{
+  boolean loginMenu() throws ClassNotFoundException, IOException{
 	  int choice;
 		String loginMenu = "\n Enter choice:  \n"
 				+ "1. Register with the system  \n"
@@ -125,6 +136,10 @@ class ClientServiceThread extends Thread {
 		case 1:
 			//do register
 			sendMessage("Login");
+			if(login() == true){
+				
+				return true;
+			}
 			break;
 		case 2: 
 			//do login
@@ -139,9 +154,52 @@ class ClientServiceThread extends Thread {
 		default:
 			sendMessage("Invalid command");
 			loginMenu();
-			
+			return false;
 		}
+		return false;
 	}
+  boolean login() throws ClassNotFoundException, IOException{
+	  String hashedPassword = null;
+	  sendMessage("Enter username:");
+	  message = (String)in.readObject();
+	  System.out.println(message);
+	  username = message;
+	  sendMessage("Password:");
+	  message = (String)in.readObject();
+	  System.out.println(message);
+	  password = message;
+	  
+	  hashedPassword = getMD5(password);
+	  
+	  //open file 
+	  
+	  String line = "";
+      String cvsSplitBy = ",";
+
+      try (BufferedReader br = new BufferedReader(new FileReader("login.csv"))) {
+
+          while ((line = br.readLine()) != null) {
+
+              // use comma as separator
+              String details[] = line.split(cvsSplitBy);
+              if(details[0].equals(username)){
+            	  System.out.println(details[1]);
+            	  System.out.println(hashedPassword);
+            	  if(details[1].equals(hashedPassword)){
+            		  sendMessage("Authenticated");
+            		  return true;
+            	  }
+              }
+
+          }
+          System.out.println("User not found");
+          sendMessage("Login Failed");
+
+      } catch (IOException e) {
+          e.printStackTrace();
+      }
+	return false;
+  }
   void register() throws ClassNotFoundException, IOException{
 	  String hashedPassword = null;
 	  sendMessage("First off what is your name?");
