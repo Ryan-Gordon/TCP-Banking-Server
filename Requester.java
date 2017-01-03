@@ -14,7 +14,7 @@ public class Requester{
 	Requester()
 	{
 		user_input = new Scanner(System.in);
-		ipaddress = "54.244.76.23";
+		ipaddress = "54.213.87.187";
 		Client userInfo = new Client();
 		authenticated = false;
 	}
@@ -42,6 +42,45 @@ public class Requester{
 					if (authenticated == true){
 							System.out.println("User is authenticated");
 							//show menu
+							message = (String)in.readObject();
+							System.out.println(message);
+							message = (String)in.readObject();
+							System.out.println(message);
+							message = user_input.next();
+							sendMessage(message);
+							
+							System.out.println("Listening for response");
+							
+							message = (String)in.readObject();
+							System.out.println(message);
+							
+							switch(message){
+							case "Change Customer Details":
+								
+								
+								
+								
+								break;
+							case "Withdraw":
+								
+								
+								break;
+								
+							case "Deposit":
+								System.out.println("In register \n");
+								
+								registerUser();
+								break;
+								
+							case "Quit!":
+								System.out.println("Now closing connection");
+								sendMessage("bye");
+								System.exit(0);
+								break;
+							default :
+								
+							}
+							
 					}
 					
 					
@@ -126,7 +165,6 @@ public class Requester{
 			break;
 			
 		case "Quit!":
-			System.out.println("In quit");
 			System.out.println("Now closing connection");
 			sendMessage("bye");
 			System.exit(0);
