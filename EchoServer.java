@@ -1,6 +1,7 @@
 package ie.gmit.sw;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileReader;
@@ -11,8 +12,12 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.RandomAccessFile;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -139,6 +144,94 @@ class ClientServiceThread extends Thread {
 		case 1:
 			//change customer details
 			sendMessage("Change Customer Details");
+			
+			sendMessage("Current Name: "+ name+"\n Enter new name: ");
+			message = (String)in.readObject();
+			System.out.println(message);
+			name = message;
+			
+			sendMessage("Current Address: "+ address+"\n Enter new address: ");
+			message = (String)in.readObject();
+			System.out.println(message);
+			address = message;
+			
+			sendMessage("Current Account Number: "+ accnum+"\n Enter new account number (We find your customer record via username): ");
+			message = (String)in.readObject();
+			System.out.println(message);
+			accnum = message;
+			
+			File file = new File("userDetails.csv");
+			// Creates a random access file stream to read from, and optionally to write to
+			
+			            FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
+		
+			 
+		
+			            // Acquire an exclusive lock on this channel's file (blocks until lock can be retrieved)
+		
+			           
+			            // Attempts to acquire an exclusive lock on this channel's file (returns null or throws
+	
+			            // an exception if the file is already locked.
+	
+			            try {
+			            	 //FileLock lock = channel.tryLock();
+			            	//open file 
+			          	  
+			          	  	String line = "";
+			                String cvsSplitBy = ",";
+			            	BufferedReader detailsReader = new BufferedReader(new FileReader(file));
+			            	
+		            		  while ((line = detailsReader.readLine()) != null) {
+		            			  String userDetails[] = line.split(cvsSplitBy);
+		            			  if(userDetails[0].equals(username)){
+		            				  FileWriter detailsWriter = new FileWriter(file,true);
+		            				  //we have found the user in the system after login
+		            				  System.out.println("Found user in system changing details");
+		            				  userDetails[1]= name ;
+		            				  userDetails[2] = address;
+		            				  userDetails[3] = accnum;
+		            				  
+		            				  System.out.println("Changing details now");
+		            				  StringBuilder sb = new StringBuilder();
+		            			      
+		            			      
+		            			      sb.append(userDetails[0]);
+		            			      sb.append(',');
+		            			      sb.append(name);
+		            			      sb.append(',');
+		            			      sb.append(address);
+		            			      sb.append(',');
+		            			      sb.append(accnum);
+		            			      sb.append(',');
+		            			      sb.append(userDetails[4]);
+		            			      sb.append("\r\n");
+		            				  System.out.println(sb.toString());
+		            				  detailsWriter.write(sb.toString());
+		            				  detailsWriter.close();
+		            				  break;
+		            			  }
+		            			  
+
+			            }
+
+            				  detailsReader.close();
+            				  
+		            		 // lock.release();
+	            			  channel.close();
+			            }
+			            catch (OverlappingFileLockException e) {
+			
+			                // thrown when an attempt is made to acquire a lock on a a file that overlaps
+			                // a region already locked by the same JVM or when another thread is already
+		
+			                // waiting to lock an overlapping region of the same file
+		
+			                System.out.println("Overlapping File Lock Error: " + e.getMessage());
+		
+			            }
+
+
 			break;
 		case 2: 
 			
@@ -250,6 +343,7 @@ class ClientServiceThread extends Thread {
             				  accnum = userDetails[3];
             				  balance = Double.parseDouble(userDetails[4]);
             				  
+            				 
             				  detailsReader.close();
             				  break;
             				  
