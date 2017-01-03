@@ -2,6 +2,8 @@ package ie.gmit.sw;
 
 import java.io.BufferedReader;
 import java.io.EOFException;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
@@ -10,6 +12,8 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class EchoServer {
   public static void main(String[] args) throws Exception {
@@ -31,14 +35,12 @@ class ClientServiceThread extends Thread {
   boolean running = true;
   ObjectOutputStream out;
   ObjectInputStream in;
+ String name;
+	String address;
+	   String accnum;
+	   String username;
+	   String password;
   
-  static class ClientDetails {
-	   static String name;
-	   static String address;
-	   static String accnum;
-	   static String username;
-	   static String password;
-  }
 
   ClientServiceThread(Socket s, int i) {
     clientSocket = s;
@@ -141,39 +143,77 @@ class ClientServiceThread extends Thread {
 		}
 	}
   void register() throws ClassNotFoundException, IOException{
+	  String hashedPassword = null;
 	  sendMessage("First off what is your name?");
 	  
 	  
 	  message = (String)in.readObject();
 	  System.out.println(message);
-	  ClientDetails.name = message;
+	  name = message;
  sendMessage("what is your address?");
 	  
 	  
 	  message = (String)in.readObject();
 	  System.out.println(message);
-	  ClientDetails.address = message;
+	  address = message;
  sendMessage(" what is your account number?");
 	  
 	  
 	  message = (String)in.readObject();
 	  System.out.println(message);
-	  ClientDetails.accnum = message;
+	  accnum = message;
 	  sendMessage("Choose a username?");
 	  
 	  
 	  message = (String)in.readObject();
 	  System.out.println(message);
-	  ClientDetails.username = message;
+	  username = message;
 	  sendMessage("Choose password?");
 	  
 	  
 	  message = (String)in.readObject();
 	  System.out.println(message);
-	  ClientDetails.password = message;
+	  password = message;
 	  
 	  sendMessage("Account Created");
 	  
+	  FileWriter pw = new FileWriter("login.csv",true);
+      StringBuilder sb = new StringBuilder();
+      
+      hashedPassword = getMD5(password);
+      sb.append(username);
+      sb.append(',');
+      sb.append(hashedPassword);
+      sb.append("\r\n");
+
+      pw.write(sb.toString());
+      pw.close();
 	  
+	  
+  }
+  private String getMD5(String str){
+	  String generatedPassword = null;
+	  try {
+          // Create MessageDigest instance for MD5
+          MessageDigest md = MessageDigest.getInstance("MD5");
+          //Add password bytes to digest
+          md.update(str.getBytes());
+          //Get the hash's bytes 
+          byte[] bytes = md.digest();
+          //This bytes[] has bytes in decimal format;
+          //Convert it to hexadecimal format
+          StringBuilder sb2 = new StringBuilder();
+          for(int i=0; i< bytes.length ;i++)
+          {
+              sb2.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
+          }
+          //Get complete hashed password in hex format
+          generatedPassword = sb2.toString();
+      } 
+      catch (NoSuchAlgorithmException e) 
+      {
+          e.printStackTrace();
+      }
+	return generatedPassword;
   }
 }
