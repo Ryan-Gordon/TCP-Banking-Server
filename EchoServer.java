@@ -47,6 +47,7 @@ class ClientServiceThread extends Thread {
   String accnum;
   String username;
   String password;
+  double balance;
   
 
   ClientServiceThread(Socket s, int i) {
@@ -95,7 +96,7 @@ class ClientServiceThread extends Thread {
 				}
 				if (authenticated ==true){
 					//presentCustomerMenu
-					message = "bye";
+					customerMenu();
 				}
 				
 				
@@ -113,7 +114,59 @@ class ClientServiceThread extends Thread {
       e.printStackTrace();
     }
   }
-  
+  void customerMenu() throws ClassNotFoundException, IOException{
+	  int choice;
+	  String loginMenu = "\n Enter choice:  \n"
+				+ "1. Change Customer Details  \n"
+				+ "2. View Last 10 trasnactions  \n"
+				+ "3. Withdraw  \n"
+				+ "4. Deposit  \n"
+				+ "5. Quit  \n";
+		String starterMessage = " _____________________Acme ATM Company___________________\n"
+				+ "|\t\t\t\t\t\t\t| \n"
+				+ "|\tWelcome to Gordon Allied National Bank\t\t|\n"
+				+ "|\t\t\t\t\t\t\t| \n"
+				+ "|_______________________________________________________|"+loginMenu;
+		sendMessage(starterMessage);
+	    
+		
+		sendMessage("\n\n Your Balance is :"+String.format( "%.2f", balance ));
+		
+		message = (String)in.readObject();
+		choice = new Integer(message);
+		
+		switch(choice){
+		case 1:
+			//change customer details
+			sendMessage("Change Customer Details");
+			break;
+		case 2: 
+			
+			break;
+		case 3:
+			
+			//do login
+			sendMessage("Deposit");
+			sendMessage("How much do you want to deposit?");
+			message = (String)in.readObject();
+			
+			
+			
+			break;
+			
+		case 4:
+			sendMessage("Withdraw");
+			break;
+		case 5:
+			sendMessage("Quit!");
+			message = (String)in.readObject();
+			break;
+			
+		default:
+			sendMessage("Invalid command");
+			customerMenu();
+		}
+  }
   boolean loginMenu() throws ClassNotFoundException, IOException{
 	  int choice;
 		String loginMenu = "\n Enter choice:  \n"
@@ -181,11 +234,27 @@ class ClientServiceThread extends Thread {
           while ((line = br.readLine()) != null) {
 
               // use comma as separator
-              String details[] = line.split(cvsSplitBy);
-              if(details[0].equals(username)){
-            	  System.out.println(details[1]);
+              String loginDetails[] = line.split(cvsSplitBy);
+              if(loginDetails[0].equals(username)){
+            	  System.out.println(loginDetails[1]);
             	  System.out.println(hashedPassword);
-            	  if(details[1].equals(hashedPassword)){
+            	  if(loginDetails[1].equals(hashedPassword)){
+            		  BufferedReader detailsReader = new BufferedReader(new FileReader("userDetails.csv"));
+            		  while ((line = detailsReader.readLine()) != null) {
+            			  String userDetails[] = line.split(cvsSplitBy);
+            			  if(userDetails[0].equals(username)){
+            				  //we have found the user in the system after login
+            				  
+            				  name = userDetails[1];
+            				  address = userDetails[2];
+            				  accnum = userDetails[3];
+            				  balance = Double.parseDouble(userDetails[4]);
+            				  
+            				  detailsReader.close();
+            				  break;
+            				  
+            			  }
+            		  }
             		  sendMessage("Authenticated");
             		  return true;
             	  }
@@ -233,6 +302,8 @@ class ClientServiceThread extends Thread {
 	  System.out.println(message);
 	  password = message;
 	  
+	  balance = (double)(Math.random() * 10) + 1;
+	  
 	  sendMessage("Account Created");
 	  
 	  FileWriter pw = new FileWriter("login.csv",true);
@@ -246,9 +317,37 @@ class ClientServiceThread extends Thread {
 
       pw.write(sb.toString());
       pw.close();
-	  
+      
+      /*
+       * Now we will print the details of the customer to a seperate file
+       * This is because I consider it unsafe to have all details in one file
+       * 
+       */
+      FileWriter detailsWriter = new FileWriter("userDetails.csv",true);
+      StringBuilder detailsSB = new StringBuilder();
+      
+      hashedPassword = getMD5(password);
+      detailsSB.append(username);
+      detailsSB.append(',');
+      detailsSB.append(name);
+      detailsSB.append(',');
+      detailsSB.append(address);
+      detailsSB.append(',');
+      detailsSB.append(accnum);
+      detailsSB.append(',');
+      detailsSB.append(balance);
+      detailsSB.append("\r\n");
+
+      detailsWriter.write(detailsSB.toString());
+      detailsWriter.close();
 	  
   }
+  /*
+   * getMD5()
+   * Takes a @param of a string
+   * Then gets the bytes for this string 
+   * Generates an MD5 using the bytes and returns this as a string
+   */
   private String getMD5(String str){
 	  String generatedPassword = null;
 	  try {
