@@ -4,13 +4,13 @@ import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 public class Requester{
-	Socket requestSocket;
-	ObjectOutputStream out;
- 	ObjectInputStream in;
- 	String message;
- 	String ipaddress;
- 	Scanner user_input;
- 	boolean authenticated;
+	private Socket requestSocket;
+	private ObjectOutputStream out;
+ 	private ObjectInputStream in;
+ 	private String message;
+ 	private String ipaddress;
+ 	private Scanner user_input;
+ 	private boolean authenticated;
 	Requester()
 	{
 		user_input = new Scanner(System.in);
@@ -39,7 +39,7 @@ public class Requester{
 					authenticated = startMenu();
 					}
 					
-					if (authenticated == true){
+					while(authenticated == true){
 							System.out.println("User is authenticated");
 							//show menu
 							message = (String)in.readObject();
@@ -56,20 +56,44 @@ public class Requester{
 							
 							switch(message){
 							case "Change Customer Details":
+								message = (String)in.readObject();
+								System.out.println(message);
+								user_input.nextLine();
+								message = user_input.nextLine();
+								sendMessage(message);
 								
-								
-								
+								//address
+								message = (String)in.readObject();
+								System.out.println(message);
+								message = user_input.nextLine();
+								sendMessage(message);
+								//account number
+								message = (String)in.readObject();
+								System.out.println(message);
+								message = user_input.nextLine();
+								sendMessage(message);
 								
 								break;
 							case "Withdraw":
+								message = (String)in.readObject();
+								System.out.println(message);
+								message = (String)in.readObject();
+								System.out.println(message);
+								message = user_input.next();
 								
+								
+								sendMessage(message);
 								
 								break;
 								
 							case "Deposit":
-								System.out.println("In register \n");
+								message = (String)in.readObject();
+								System.out.println(message);
+								message = user_input.next();
+								sendMessage(message);
 								
-								registerUser();
+								
+								
 								break;
 								
 							case "Quit!":
