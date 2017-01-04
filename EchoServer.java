@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -20,6 +21,9 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class EchoServer {
   public static void main(String[] args) throws Exception {
@@ -33,6 +37,67 @@ public class EchoServer {
     
   }
 }
+
+/*
+ * Inner class used for a customers account
+ * 
+ */
+//An inner class for account
+  class Account {
+ // Create a new lock
+ private static Lock lock = new ReentrantLock();
+
+ // Create a condition
+ private static Condition newDeposit = lock.newCondition();
+
+ private double balance = 0;
+
+ public double getBalance() {
+   return balance;
+ }
+
+ public void withdraw(int amount) {
+   lock.lock();
+   System.out.println("Locked the account for "+Thread.currentThread().getName());
+   try {
+     if (balance < (amount-1000)){
+    	 System.out.println("Insufficient funds even with credit limit");
+       
+     }
+     else{
+   balance -= amount;
+   System.out.println("\t\t\tWithdraw " + amount +
+     "\t\t" + getBalance());
+     }
+   }
+   finally {
+     lock.unlock(); 
+   }
+ }
+
+ public void deposit(int amount) {
+   lock.lock(); 
+   System.out.println("Locked the account for "+Thread.currentThread().getName());
+   try {
+     balance += amount;
+     System.out.println("Deposit " + amount +
+       "\t\t\t\t\t" + getBalance());
+
+     // Signal thread 
+     newDeposit.signalAll();
+   }
+   finally {
+	   System.out.println("Unlocked accoutn for other threads");
+     lock.unlock();
+   }
+ }
+
+public void setBalance(double balance2) {
+	// TODO Auto-generated method stub
+	this.balance = balance2;
+}
+}
+
 
 class ClientServiceThread extends Thread {
   Socket clientSocket;
@@ -53,6 +118,7 @@ class ClientServiceThread extends Thread {
   String username;
   String password;
   double balance;
+  private static Account account = new Account();
   
 
   ClientServiceThread(Socket s, int i) {
@@ -135,7 +201,7 @@ class ClientServiceThread extends Thread {
 		sendMessage(starterMessage);
 	    
 		
-		sendMessage("\n\n Your Balance is :"+String.format( "%.2f", balance ));
+		sendMessage("\n\n Your Balance is :"+String.format( "%.2f", account.getBalance() ));
 		
 		message = (String)in.readObject();
 		choice = new Integer(message);
@@ -195,6 +261,10 @@ class ClientServiceThread extends Thread {
 		            				  System.out.println("Changing details now");
 		            				  StringBuilder sb = new StringBuilder();
 		            			      
+		            				  
+		            				  //mtehod used to find the previous customer details and remove them 
+		            				  removeLineFromFile("userDetails.csv", line);
+		            				  
 		            			      
 		            			      sb.append(userDetails[0]);
 		            			      sb.append(',');
@@ -241,14 +311,22 @@ class ClientServiceThread extends Thread {
 			//do login
 			sendMessage("Deposit");
 			sendMessage("How much do you want to deposit?");
+			
 			message = (String)in.readObject();
-			
-			
+			System.out.println(message);
+			// TODO change this to double
+			account.deposit(Integer.parseInt(message));
 			
 			break;
 			
 		case 4:
 			sendMessage("Withdraw");
+			sendMessage("How much do you want to Withdraw?");
+			sendMessage("You have "+account.getBalance()+" balance and a 1000 credit limit");
+			message = (String)in.readObject();
+			System.out.println(message);
+			// TODO change this to double
+			account.withdraw(Integer.parseInt(message));
 			break;
 		case 5:
 			sendMessage("Quit!");
@@ -321,9 +399,10 @@ class ClientServiceThread extends Thread {
 	  
 	  String line = "";
       String cvsSplitBy = ",";
+      BufferedReader br = new BufferedReader(new FileReader("login.csv"));
 
-      try (BufferedReader br = new BufferedReader(new FileReader("login.csv"))) {
-
+      try  {
+    	  
           while ((line = br.readLine()) != null) {
 
               // use comma as separator
@@ -343,8 +422,9 @@ class ClientServiceThread extends Thread {
             				  accnum = userDetails[3];
             				  balance = Double.parseDouble(userDetails[4]);
             				  
-            				 
+            				  account.setBalance(balance);
             				  detailsReader.close();
+            				  br.close();
             				  break;
             				  
             			  }
@@ -360,6 +440,9 @@ class ClientServiceThread extends Thread {
 
       } catch (IOException e) {
           e.printStackTrace();
+      }
+      finally{
+    	  br.close();
       }
 	return false;
   }
@@ -466,5 +549,63 @@ class ClientServiceThread extends Thread {
           e.printStackTrace();
       }
 	return generatedPassword;
+  }
+  public void removeLineFromFile(String file, String lineToRemove) throws IOException {
+
+	    try {
+
+	      File inFile = new File(file);
+
+	      if (!inFile.isFile()) {
+	        System.out.println("Parameter is not an existing file");
+	        return;
+	      }
+
+	      //Construct the new file that will later be renamed to the original filename.
+	      File tempFile = new File(inFile.getAbsolutePath() + ".tmp");
+
+	      BufferedReader br = new BufferedReader(new FileReader(file));
+	      PrintWriter pw = new PrintWriter(new FileWriter(tempFile));
+
+	      String line = null;
+
+	      //Read from the original file and write to the new
+	      //unless content matches data to be removed.
+	      while ((line = br.readLine()) != null) {
+
+	        if (!line.trim().equals(lineToRemove)) {
+	        	System.out.println("Writing line to new file");
+	          pw.println(line);
+	          pw.flush();
+	        }
+	        else{
+	        	System.out.println("Found line");
+	        }
+	      }
+	      pw.close();
+	      br.close();
+
+	      //Delete the original file
+	      if (!inFile.delete()) {
+	        System.out.println("Could not delete file");
+	        System.out.println(inFile.getAbsolutePath());
+	        
+	        return;
+	      }
+	    //Rename the new file to the filename the original file had.
+	      if (!tempFile.renameTo(inFile))
+	        System.out.println("Could not rename file");
+
+	    }
+	    catch (FileNotFoundException ex) {
+	      ex.printStackTrace();
+	    }
+	    catch (IOException ex) {
+	      ex.printStackTrace();
+	    }
+	    
+	    finally{
+	    	System.out.println("Removed entry from file");
+	    }
   }
 }
