@@ -1,23 +1,18 @@
 package ie.gmit.sw;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -589,7 +584,8 @@ class ClientServiceThread extends Thread {
 	      if (!inFile.delete()) {
 	        System.out.println("Could not delete file");
 	        System.out.println(inFile.getAbsolutePath());
-	        
+	        br.close();
+	        inFile.delete();
 	        return;
 	      }
 	    //Rename the new file to the filename the original file had.

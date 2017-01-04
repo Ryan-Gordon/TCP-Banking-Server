@@ -15,7 +15,6 @@ public class Requester{
 	{
 		user_input = new Scanner(System.in);
 		ipaddress = "54.213.87.187";
-		Client userInfo = new Client();
 		authenticated = false;
 	}
 	void run()
