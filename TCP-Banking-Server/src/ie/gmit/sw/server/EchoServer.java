@@ -13,6 +13,7 @@ import java.io.RandomAccessFile;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -207,99 +208,7 @@ class ClientServiceThread extends Thread {
 		case 1:
 			//change customer details
 			sendMessage("Change Customer Details");
-			
-			sendMessage("Current Name: "+ name+"\n Enter new name: ");
-			message = (String)in.readObject();
-			System.out.println(message);
-			name = message;
-			
-			sendMessage("Current Address: "+ address+"\n Enter new address: ");
-			message = (String)in.readObject();
-			System.out.println(message);
-			address = message;
-			
-			sendMessage("Current Account Number: "+ accnum+"\n Enter new account number (We find your customer record via username): ");
-			message = (String)in.readObject();
-			System.out.println(message);
-			accnum = message;
-			
-			File file = new File("userDetails.csv");
-			// Creates a random access file stream to read from, and optionally to write to
-			
-            FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
-
- 
-
-            // Acquire an exclusive lock on this channel's file (blocks until lock can be retrieved)
-
-           
-            // Attempts to acquire an exclusive lock on this channel's file (returns null or throws
-
-            // an exception if the file is already locked.
-
-            try {
-            	 //FileLock lock = channel.tryLock();
-            	//open file 
-          	  
-          	  	String line = "";
-                String cvsSplitBy = ",";
-            	BufferedReader detailsReader = new BufferedReader(new FileReader(file));
-            	
-        		  while ((line = detailsReader.readLine()) != null) {
-        			  String userDetails[] = line.split(cvsSplitBy);
-        			  if(userDetails[0].equals(username)){
-        				  removeLineFromFile("userDetails.csv", line);
-        				  FileWriter detailsWriter = new FileWriter(file,true);
-        				  //we have found the user in the system after login
-        				  System.out.println("Found user in system changing details");
-        				  userDetails[1]= name ;
-        				  userDetails[2] = address;
-        				  userDetails[3] = accnum;
-        				  
-        				  System.out.println("Changing details now");
-        				  StringBuilder sb = new StringBuilder();
-        			      
-        				  
-        				  //mtehod used to find the previous customer details and remove them 
-        				  
-        				  //TODO add a lock
-        			      
-        			      sb.append(userDetails[0]);
-        			      sb.append(',');
-        			      sb.append(name);
-        			      sb.append(',');
-        			      sb.append(address);
-        			      sb.append(',');
-        			      sb.append(accnum);
-        			      sb.append(',');
-        			      sb.append(userDetails[4]);
-        			      sb.append("\r\n");
-        				  System.out.println(sb.toString());
-        				  detailsWriter.write(sb.toString());
-        				  detailsWriter.close();
-        				  break;
-        			  }
-        			  
-
-            }
-
-				  detailsReader.close();
-				  
-        		 // lock.release();
-    			  channel.close();
-            }
-            catch (OverlappingFileLockException e) {
-
-                // thrown when an attempt is made to acquire a lock on a a file that overlaps
-                // a region already locked by the same JVM or when another thread is already
-
-                // waiting to lock an overlapping region of the same file
-
-                System.out.println("Overlapping File Lock Error: " + e.getMessage());
-
-            }
-
-
+			changeCustomerDetails();
 			break;
 		case 2: 
 			
@@ -331,6 +240,86 @@ class ClientServiceThread extends Thread {
 /**
  * @throws IOException
  * @throws ClassNotFoundException
+ * @throws FileNotFoundException
+ */
+private void changeCustomerDetails() throws IOException, ClassNotFoundException, FileNotFoundException {
+	sendMessage("Current Name: "+ name+"\n Enter new name: ");
+	message = (String)in.readObject();
+	System.out.println(message);
+	name = message;
+	
+	sendMessage("Current Address: "+ address+"\n Enter new address: ");
+	message = (String)in.readObject();
+	System.out.println(message);
+	address = message;
+	
+	sendMessage("Current Account Number: "+ accnum+"\n Enter new account number (We find your customer record via username): ");
+	message = (String)in.readObject();
+	System.out.println(message);
+	accnum = message;
+
+	try {
+		File file = new File("userDetails.csv");
+		// Creates a random access file stream to read from, and optionally to write to
+		
+	    FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
+		FileLock lock = channel.tryLock();
+		//open file \
+	  	String line = "";
+	    String cvsSplitBy = ",";
+		BufferedReader detailsReader = new BufferedReader(new FileReader(file));
+		
+		  while ((line = detailsReader.readLine()) != null) {
+			  String userDetails[] = line.split(cvsSplitBy);
+			  if(userDetails[0].equals(username)){
+				  removeLineFromFile("userDetails.csv", line);
+				  FileWriter detailsWriter = new FileWriter(file,true);
+				  //we have found the user in the system after login
+				  System.out.println("Found user in system changing details");
+				  userDetails[1]= name ;
+				  userDetails[2] = address;
+				  userDetails[3] = accnum;
+				  
+				  System.out.println("Changing details now");
+				  StringBuilder sb = new StringBuilder();
+			      
+				  
+				  //mtehod used to find the previous customer details and remove them 
+				  
+				  //TODO add a lock
+			      
+			      sb.append(userDetails[0]);
+			      sb.append(',');
+			      sb.append(name);
+			      sb.append(',');
+			      sb.append(address);
+			      sb.append(',');
+			      sb.append(accnum);
+			      sb.append(',');
+			      sb.append(userDetails[4]);
+			      sb.append("\r\n");
+				  System.out.println(sb.toString());
+				  detailsWriter.write(sb.toString());
+				  detailsWriter.close();
+				  break;
+			  }
+	}//while
+		  detailsReader.close();
+		  
+		  lock.release();
+		  channel.close();
+	}//end try
+	catch (OverlappingFileLockException e) {
+	    // thrown when an attempt is made to acquire a lock on a a file that overlaps
+	    // a region already locked by the sme JVM or when another thread is already
+	    // waiting to lock an overlapping region of the same file
+	    System.out.println("Overlapping File Lock Error: " + e.getMessage());
+	}
+}
+
+/**
+ * @throws IOException
+ * @throws ClassNotFoundException
  */
 private void depositFunds() throws IOException, ClassNotFoundException {
 	sendMessage("How much do you want to deposit?");
@@ -345,25 +334,7 @@ private void depositFunds() throws IOException, ClassNotFoundException {
 	
 	//if the transaction is successful we want to log the transaction details to the file
 	if(transactionSuccessful){
-		//log the transaction into the transaction file
-		 FileWriter detailsWriter = new FileWriter("userTransactions.csv",true);
-		 StringBuilder detailsSB = new StringBuilder();
-		  
-		  detailsSB.append(username);
-		  detailsSB.append(',');
-		  detailsSB.append(accnum);
-		  detailsSB.append(',');
-		  detailsSB.append(Double.parseDouble(message));
-		  detailsSB.append(',');
-		  detailsSB.append(prevBalance);
-		  detailsSB.append(',');
-		  detailsSB.append(account.getBalance());
-		  detailsSB.append("\r\n");
-
-		  detailsWriter.write(detailsSB.toString());
-		  detailsWriter.close();
-		  
-		  //TODO attempt to change balance in userDetails file
+		logTransaction(prevBalance ,"userDetails.csv", "userTransactions.csv");
 		  
 		  
 	}
@@ -387,28 +358,97 @@ private void withdrawFunds() throws IOException, ClassNotFoundException {
 	
 	//if the transaction is successful we want to log the transaction details to the file
 	if(transactionSuccessful){
-		//log the transaction into the transaction file
-		 FileWriter detailsWriter = new FileWriter("userTransactions.csv",true);
-		 StringBuilder detailsSB = new StringBuilder();
-		  
-		  detailsSB.append(username);
-		  detailsSB.append(',');
-		  detailsSB.append(accnum);
-		  detailsSB.append(',');
-		  detailsSB.append(Double.parseDouble(message));
-		  detailsSB.append(',');
-		  detailsSB.append(prevBalance);
-		  detailsSB.append(',');
-		  detailsSB.append(account.getBalance());
-		  detailsSB.append("\r\n");
-
-		  detailsWriter.write(detailsSB.toString());
-		  detailsWriter.close();
+		logTransaction(prevBalance ,"userDetails.csv", "userTransactions.csv");
 		  
 		  //TODO attempt to change balance in userDetails file
 	}
 	
 }
+
+/**
+ * @param prevBalance
+ * @param userDetailsFile
+ * @param transactionFile
+ * @throws IOException
+ * @throws FileNotFoundException
+ */
+private void logTransaction(double prevBalance, String transactionFile, String userDetailsFile) throws IOException, FileNotFoundException {
+	//log the transaction into the transaction file
+	 FileWriter transWriter = new FileWriter(transactionFile,true);
+	 StringBuilder detailsSB = new StringBuilder();
+	  
+	  detailsSB.append(username);
+	  detailsSB.append(',');
+	  detailsSB.append(accnum);
+	  detailsSB.append(',');
+	  detailsSB.append(Double.parseDouble(message));
+	  detailsSB.append(',');
+	  detailsSB.append(prevBalance);
+	  detailsSB.append(',');
+	  detailsSB.append(account.getBalance());
+	  detailsSB.append("\r\n");
+
+	  transWriter.write(detailsSB.toString());
+	  transWriter.close();
+	  
+	  //TODO attempt to change balance in userDetails file
+	  try {
+	  	File file = new File(userDetailsFile);
+		// Creates a random access file stream to read from, and optionally to write to
+		
+	    FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
+	  	FileLock lock = channel.tryLock();
+	  	//open file \
+		  	String line = "";
+	      String cvsSplitBy = ",";
+	  	BufferedReader detailsReader = new BufferedReader(new FileReader(file));
+	  	
+		  while ((line = detailsReader.readLine()) != null) {
+			  String userDetails[] = line.split(cvsSplitBy);
+			  if(userDetails[0].equals(username)){
+				  removeLineFromFile("userDetails.csv", line);
+				  FileWriter detailsWriter = new FileWriter(file,true);
+				  //we have found the user in the system after login
+				  userDetails[1]= name ;
+				  userDetails[2] = address;
+				  userDetails[3] = accnum;
+				  StringBuilder sb = new StringBuilder();
+			      
+				  
+				  //mtehod used to find the previous customer details and remove them 
+				  
+				  //TODO add a lock
+			      
+			      sb.append(userDetails[0]);
+			      sb.append(',');
+			      sb.append(name);
+			      sb.append(',');
+			      sb.append(address);
+			      sb.append(',');
+			      sb.append(accnum);
+			      sb.append(',');
+			      sb.append(account.getBalance());
+			      sb.append("\r\n");
+				  System.out.println(sb.toString());
+				  detailsWriter.write(sb.toString());
+				  detailsWriter.close();
+				  break;
+			  }//end if
+		  }//end while
+			  detailsReader.close();
+			  
+		  lock.release();
+		  channel.close();
+	  }//end try
+	  catch (OverlappingFileLockException e) {
+
+	      // thrown when an attempt is made to acquire a lock on a a file that overlaps
+	      // a region already locked by the same JVM or when another thread is already
+	      // waiting to lock an overlapping region of the same file
+	      System.out.println("Overlapping File Lock Error: " + e.getMessage());
+	  }
+}
+
   boolean loginMenu() throws ClassNotFoundException, IOException{
 	  int choice;
 		String loginMenu = "\n Enter choice:  \n"
