@@ -308,12 +308,7 @@ class ClientServiceThread extends Thread {
 			//TODO refactor into its own method
 			//do login
 			sendMessage("Deposit");
-			sendMessage("How much do you want to deposit?");
-			
-			message = (String)in.readObject();
-			System.out.println(message);
-			// TODO change this to double
-			account.deposit(Double.parseDouble(message));
+			depositFunds();
 			
 			break;
 			
@@ -332,6 +327,47 @@ class ClientServiceThread extends Thread {
 			customerMenu();
 		}
   }
+
+/**
+ * @throws IOException
+ * @throws ClassNotFoundException
+ */
+private void depositFunds() throws IOException, ClassNotFoundException {
+	sendMessage("How much do you want to deposit?");
+	
+	double prevBalance = account.getBalance();
+	boolean transactionSuccessful;
+	
+	message = (String)in.readObject();
+	System.out.println(message);
+	// TODO change this to double
+	transactionSuccessful =  account.deposit(Double.parseDouble(message));
+	
+	//if the transaction is successful we want to log the transaction details to the file
+	if(transactionSuccessful){
+		//log the transaction into the transaction file
+		 FileWriter detailsWriter = new FileWriter("userTransactions.csv",true);
+		 StringBuilder detailsSB = new StringBuilder();
+		  
+		  detailsSB.append(username);
+		  detailsSB.append(',');
+		  detailsSB.append(accnum);
+		  detailsSB.append(',');
+		  detailsSB.append(Double.parseDouble(message));
+		  detailsSB.append(',');
+		  detailsSB.append(prevBalance);
+		  detailsSB.append(',');
+		  detailsSB.append(account.getBalance());
+		  detailsSB.append("\r\n");
+
+		  detailsWriter.write(detailsSB.toString());
+		  detailsWriter.close();
+		  
+		  //TODO attempt to change balance in userDetails file
+		  
+		  
+	}
+}
 
 /**
  * @throws IOException
