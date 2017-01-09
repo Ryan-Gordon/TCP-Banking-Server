@@ -1,4 +1,4 @@
-package ie.gmit.sw;
+package ie.gmit.sw.server;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -33,7 +33,7 @@ public class EchoServer {
   }
 }
 
-/*
+/**
  * Inner class used for a customers account
  * 
  */
@@ -51,18 +51,20 @@ public class EchoServer {
    return balance;
  }
 
- public void withdraw(int amount) {
+ public boolean withdraw(double amount) {
    lock.lock();
    System.out.println("Locked the account for "+Thread.currentThread().getName());
    try {
      if (balance < (amount-1000)){
     	 System.out.println("Insufficient funds even with credit limit");
-       
+    	 return false;
      }
      else{
-   balance -= amount;
-   System.out.println("\t\t\tWithdraw " + amount +
-     "\t\t" + getBalance());
+	   balance -= amount;
+	   System.out.println("\t\t\tWithdraw " + amount +
+	     "\t\t" + getBalance());
+	   	return true;
+	   
      }
    }
    finally {
@@ -70,49 +72,49 @@ public class EchoServer {
    }
  }
 
- public void deposit(int amount) {
+ public boolean deposit(double amount) {
    lock.lock(); 
    System.out.println("Locked the account for "+Thread.currentThread().getName());
    try {
      balance += amount;
      System.out.println("Deposit " + amount +
        "\t\t\t\t\t" + getBalance());
-
+     
      // Signal thread 
      newDeposit.signalAll();
+     return true;
    }
    finally {
-	   System.out.println("Unlocked accoutn for other threads");
+	 System.out.println("Unlocked account for other threads");
      lock.unlock();
    }
  }
 
 public void setBalance(double balance2) {
-	// TODO Auto-generated method stub
 	this.balance = balance2;
 }
-}
+}// end Account class
 
 
 class ClientServiceThread extends Thread {
-  Socket clientSocket;
-  String message;
-  int clientID = -1;
-  boolean running = true;
-  ObjectOutputStream out;
-  ObjectInputStream in;
-  boolean authenticated=false;
+  private Socket clientSocket;
+  private String message;
+  private int clientID = -1;
+  private boolean running = true;
+  private ObjectOutputStream out;
+  private ObjectInputStream in;
+  private boolean authenticated=false;
   /*
    * These are the user variables.
    * Started by using a Inner class however the varaible within were not thread safe
    * Local variables are thread safe however.
    */
-  String name;
-  String address;
-  String accnum;
-  String username;
-  String password;
-  double balance;
+  private String name;
+  private String address;
+  private String accnum;
+  private String username;
+  private String password;
+  private double balance;
   private static Account account = new Account();
   
 
@@ -185,8 +187,8 @@ class ClientServiceThread extends Thread {
 	  String loginMenu = "\n Enter choice:  \n"
 				+ "1. Change Customer Details  \n"
 				+ "2. View Last 10 trasnactions  \n"
-				+ "3. Withdraw  \n"
-				+ "4. Deposit  \n"
+				+ "3. Deposit  \n"
+				+ "4. Withdraw  \n"
 				+ "5. Quit  \n";
 		String starterMessage = " _____________________Acme ATM Company___________________\n"
 				+ "|\t\t\t\t\t\t\t| \n"
@@ -224,77 +226,78 @@ class ClientServiceThread extends Thread {
 			File file = new File("userDetails.csv");
 			// Creates a random access file stream to read from, and optionally to write to
 			
-			            FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
-		
-			 
-		
-			            // Acquire an exclusive lock on this channel's file (blocks until lock can be retrieved)
-		
-			           
-			            // Attempts to acquire an exclusive lock on this channel's file (returns null or throws
-	
-			            // an exception if the file is already locked.
-	
-			            try {
-			            	 //FileLock lock = channel.tryLock();
-			            	//open file 
-			          	  
-			          	  	String line = "";
-			                String cvsSplitBy = ",";
-			            	BufferedReader detailsReader = new BufferedReader(new FileReader(file));
-			            	
-		            		  while ((line = detailsReader.readLine()) != null) {
-		            			  String userDetails[] = line.split(cvsSplitBy);
-		            			  if(userDetails[0].equals(username)){
-		            				  FileWriter detailsWriter = new FileWriter(file,true);
-		            				  //we have found the user in the system after login
-		            				  System.out.println("Found user in system changing details");
-		            				  userDetails[1]= name ;
-		            				  userDetails[2] = address;
-		            				  userDetails[3] = accnum;
-		            				  
-		            				  System.out.println("Changing details now");
-		            				  StringBuilder sb = new StringBuilder();
-		            			      
-		            				  
-		            				  //mtehod used to find the previous customer details and remove them 
-		            				  removeLineFromFile("userDetails.csv", line);
-		            				  
-		            			      
-		            			      sb.append(userDetails[0]);
-		            			      sb.append(',');
-		            			      sb.append(name);
-		            			      sb.append(',');
-		            			      sb.append(address);
-		            			      sb.append(',');
-		            			      sb.append(accnum);
-		            			      sb.append(',');
-		            			      sb.append(userDetails[4]);
-		            			      sb.append("\r\n");
-		            				  System.out.println(sb.toString());
-		            				  detailsWriter.write(sb.toString());
-		            				  detailsWriter.close();
-		            				  break;
-		            			  }
-		            			  
+            FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
 
-			            }
+ 
 
-            				  detailsReader.close();
-            				  
-		            		 // lock.release();
-	            			  channel.close();
-			            }
-			            catch (OverlappingFileLockException e) {
-			
-			                // thrown when an attempt is made to acquire a lock on a a file that overlaps
-			                // a region already locked by the same JVM or when another thread is already
-		
-			                // waiting to lock an overlapping region of the same file
-		
-			                System.out.println("Overlapping File Lock Error: " + e.getMessage());
-		
-			            }
+            // Acquire an exclusive lock on this channel's file (blocks until lock can be retrieved)
+
+           
+            // Attempts to acquire an exclusive lock on this channel's file (returns null or throws
+
+            // an exception if the file is already locked.
+
+            try {
+            	 //FileLock lock = channel.tryLock();
+            	//open file 
+          	  
+          	  	String line = "";
+                String cvsSplitBy = ",";
+            	BufferedReader detailsReader = new BufferedReader(new FileReader(file));
+            	
+        		  while ((line = detailsReader.readLine()) != null) {
+        			  String userDetails[] = line.split(cvsSplitBy);
+        			  if(userDetails[0].equals(username)){
+        				  removeLineFromFile("userDetails.csv", line);
+        				  FileWriter detailsWriter = new FileWriter(file,true);
+        				  //we have found the user in the system after login
+        				  System.out.println("Found user in system changing details");
+        				  userDetails[1]= name ;
+        				  userDetails[2] = address;
+        				  userDetails[3] = accnum;
+        				  
+        				  System.out.println("Changing details now");
+        				  StringBuilder sb = new StringBuilder();
+        			      
+        				  
+        				  //mtehod used to find the previous customer details and remove them 
+        				  
+        				  //TODO add a lock
+        			      
+        			      sb.append(userDetails[0]);
+        			      sb.append(',');
+        			      sb.append(name);
+        			      sb.append(',');
+        			      sb.append(address);
+        			      sb.append(',');
+        			      sb.append(accnum);
+        			      sb.append(',');
+        			      sb.append(userDetails[4]);
+        			      sb.append("\r\n");
+        				  System.out.println(sb.toString());
+        				  detailsWriter.write(sb.toString());
+        				  detailsWriter.close();
+        				  break;
+        			  }
+        			  
+
+            }
+
+				  detailsReader.close();
+				  
+        		 // lock.release();
+    			  channel.close();
+            }
+            catch (OverlappingFileLockException e) {
+
+                // thrown when an attempt is made to acquire a lock on a a file that overlaps
+                // a region already locked by the same JVM or when another thread is already
+
+                // waiting to lock an overlapping region of the same file
+
+                System.out.println("Overlapping File Lock Error: " + e.getMessage());
+
+            }
 
 
 			break;
@@ -302,7 +305,7 @@ class ClientServiceThread extends Thread {
 			
 			break;
 		case 3:
-			
+			//TODO refactor into its own method
 			//do login
 			sendMessage("Deposit");
 			sendMessage("How much do you want to deposit?");
@@ -310,18 +313,14 @@ class ClientServiceThread extends Thread {
 			message = (String)in.readObject();
 			System.out.println(message);
 			// TODO change this to double
-			account.deposit(Integer.parseInt(message));
+			account.deposit(Double.parseDouble(message));
 			
 			break;
 			
 		case 4:
 			sendMessage("Withdraw");
-			sendMessage("How much do you want to Withdraw?");
-			sendMessage("You have "+account.getBalance()+" balance and a 1000 credit limit");
-			message = (String)in.readObject();
-			System.out.println(message);
-			// TODO change this to double
-			account.withdraw(Integer.parseInt(message));
+			//a method which attempts to process a withdrawl of funds from the customers account
+			withdrawFunds();
 			break;
 		case 5:
 			sendMessage("Quit!");
@@ -333,11 +332,52 @@ class ClientServiceThread extends Thread {
 			customerMenu();
 		}
   }
+
+/**
+ * @throws IOException
+ * @throws ClassNotFoundException
+ */
+private void withdrawFunds() throws IOException, ClassNotFoundException {
+	sendMessage("How much do you want to Withdraw?");
+	//the balance before any transaction occurs
+	double prevBalance = account.getBalance();
+	boolean transactionSuccessful;
+	
+	sendMessage("You have "+prevBalance+" balance and a 1000 credit limit");
+	message = (String)in.readObject();
+	System.out.println(message);
+	// Method which returns 
+	transactionSuccessful = account.withdraw(Double.parseDouble(message));
+	
+	//if the transaction is successful we want to log the transaction details to the file
+	if(transactionSuccessful){
+		//log the transaction into the transaction file
+		 FileWriter detailsWriter = new FileWriter("userTransactions.csv",true);
+		 StringBuilder detailsSB = new StringBuilder();
+		  
+		  detailsSB.append(username);
+		  detailsSB.append(',');
+		  detailsSB.append(accnum);
+		  detailsSB.append(',');
+		  detailsSB.append(Double.parseDouble(message));
+		  detailsSB.append(',');
+		  detailsSB.append(prevBalance);
+		  detailsSB.append(',');
+		  detailsSB.append(account.getBalance());
+		  detailsSB.append("\r\n");
+
+		  detailsWriter.write(detailsSB.toString());
+		  detailsWriter.close();
+		  
+		  //TODO attempt to change balance in userDetails file
+	}
+	
+}
   boolean loginMenu() throws ClassNotFoundException, IOException{
 	  int choice;
 		String loginMenu = "\n Enter choice:  \n"
-				+ "1. Register with the system  \n"
-				+ "2. Log-into the banking system  \n"
+				+ "1. Log-into the banking system  \n"
+				+ "2. Register with the system  \n"
 				+ "3. Quit  \n";
 		String starterMessage = " _____________________Acme ATM Company___________________\n"
 				+ "|\t\t\t\t\t\t\t| \n"
@@ -451,7 +491,7 @@ class ClientServiceThread extends Thread {
 	  name = message;
  sendMessage("what is your address?");
 	  
-	  
+	  //TODO clean code
 	  message = (String)in.readObject();
 	  System.out.println(message);
 	  address = message;
@@ -555,7 +595,7 @@ class ClientServiceThread extends Thread {
 	        System.out.println("Parameter is not an existing file");
 	        return;
 	      }
-
+	      //TODO tidy and comment the code
 	      //Construct the new file that will later be renamed to the original filename.
 	      File tempFile = new File(inFile.getAbsolutePath() + ".tmp");
 
@@ -604,4 +644,4 @@ class ClientServiceThread extends Thread {
 	    	System.out.println("Removed entry from file");
 	    }
   }
-}
+}// end ClientServiceThread class 

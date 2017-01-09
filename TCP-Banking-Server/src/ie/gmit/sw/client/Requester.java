@@ -1,4 +1,4 @@
-package ie.gmit.sw;
+package ie.gmit.sw.client;
 
 import java.io.*;
 import java.net.*;
@@ -22,7 +22,7 @@ public class Requester{
 		try{
 			//1. creating a socket to connect to the server
 			
-			requestSocket = new Socket(ipaddress, 2004);
+			requestSocket = new Socket("localhost", 2004);
 			System.out.println("Connected to "+ipaddress+" in port 2004");
 			//2. get Input and Output streams
 			out = new ObjectOutputStream(requestSocket.getOutputStream());
