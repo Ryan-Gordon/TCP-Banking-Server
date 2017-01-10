@@ -125,7 +125,7 @@ class ClientServiceThread extends Thread {
     clientSocket = s;
     clientID = i;
   }
-
+//used to send a message string to the 'out' stream.
   void sendMessage(String msg)
 	{
 		try{
@@ -215,44 +215,10 @@ class ClientServiceThread extends Thread {
 		case 2: 
 			sendMessage("Transactions");
 			//open file 
-			List<String> al= new ArrayList<String>();
-			
-			  String line = "";
-		      String cvsSplitBy = ",";
-		      BufferedReader br = new BufferedReader(new FileReader("userTransactions.csv"));
-
-		      try  {
-		    	  
-		          while ((line = br.readLine()) != null) {
-
-		              // use comma as separator
-		              String loginDetails[] = line.split(cvsSplitBy);
-		              if(loginDetails[0].equals(username)){
-		            		  al.add("Transaction Type:"+loginDetails[5]+ " Transaction Amount :" +loginDetails[2]+"\t Previous Balance: "+ loginDetails[3]+"\t New Balance: "+ loginDetails[4] + "\n") ;
-			            		 System.out.println("Transaction Amount :" +loginDetails[2]+"\t Previous Balance: "+ loginDetails[3]+"\t New Balance: "+ loginDetails[4]);
-			          
-		              }
-		              if(al.size()>10){
-		            	  System.out.print("Arraylist bigger than 10");
-		            	  al = al.subList(al.size()-10, al.size());
-		              }
-		              System.out.println(al.toString());
-		              
-		          }
-
-		      } catch (IOException e) {
-		          e.printStackTrace();
-		      }
-		      finally{
-		    	  br.close();
-		    	  sendMessage(al.toString());
-		    	  al.clear();
-		      }
+			printTransactionLog();
 			
 			break;
 		case 3:
-			//TODO refactor into its own method
-			//do login
 			sendMessage("Deposit");
 			depositFunds();
 			
@@ -273,6 +239,45 @@ class ClientServiceThread extends Thread {
 			customerMenu();
 		}
   }
+/**
+ * @throws FileNotFoundException
+ * @throws IOException
+ */
+private void printTransactionLog() throws FileNotFoundException, IOException {
+	List<String> al= new ArrayList<String>();
+	
+	  String line = "";
+	  String cvsSplitBy = ",";
+	  BufferedReader br = new BufferedReader(new FileReader("userTransactions.csv"));
+
+	  try  {
+		  
+	      while ((line = br.readLine()) != null) {
+
+	          // use comma as separator
+	          String loginDetails[] = line.split(cvsSplitBy);
+	          if(loginDetails[0].equals(username)){
+	        		  al.add("Transaction Type:"+loginDetails[5]+ " Transaction Amount :" +loginDetails[2]+"\t Previous Balance: "+ loginDetails[3]+"\t New Balance: "+ loginDetails[4] + "\n") ;
+	            		 System.out.println("Transaction Amount :" +loginDetails[2]+"\t Previous Balance: "+ loginDetails[3]+"\t New Balance: "+ loginDetails[4]);
+	          
+	          }
+	          if(al.size()>10){
+	        	  System.out.print("Arraylist bigger than 10");
+	        	  al = al.subList(al.size()-10, al.size());
+	          }
+	          System.out.println(al.toString());
+	          
+	      }
+
+	  } catch (IOException e) {
+	      e.printStackTrace();
+	  }
+	  finally{
+		  br.close();
+		  sendMessage(al.toString());
+		  al.clear();
+	  }
+}
 
 /**
  * @throws IOException
@@ -366,7 +371,6 @@ private void depositFunds() throws IOException, ClassNotFoundException {
 	
 	message = (String)in.readObject();
 	System.out.println(message);
-	// TODO change this to double
 	transactionSuccessful =  account.deposit(Double.parseDouble(message));
 	
 	//if the transaction is successful we want to log the transaction details to the file
@@ -397,7 +401,6 @@ private void withdrawFunds() throws IOException, ClassNotFoundException {
 	if(transactionSuccessful){
 		logTransaction(prevBalance ,"userDetails.csv", "userTransactions.csv", "Withdrawl");
 		  
-		  //TODO attempt to change balance in userDetails file
 	}
 	
 }
@@ -406,6 +409,7 @@ private void withdrawFunds() throws IOException, ClassNotFoundException {
  * @param prevBalance
  * @param userDetailsFile
  * @param transactionFile
+ * @param transactionType
  * @throws IOException
  * @throws FileNotFoundException
  */
@@ -430,7 +434,6 @@ private void logTransaction(double prevBalance, String userDetailsFile, String t
 	  transWriter.write(detailsSB.toString());
 	  transWriter.close();
 	  
-	  //TODO attempt to change balance in userDetails file
 	  try {
 	  	File file = new File(userDetailsFile);
 		// Creates a random access file stream to read from, and optionally to write to
@@ -532,6 +535,10 @@ private void logTransaction(double prevBalance, String userDetailsFile, String t
 		}
 		return false;
 	}
+  
+  
+  
+  //TODO clean up login and register remove print statments
   boolean login() throws ClassNotFoundException, IOException{
 	  String hashedPassword = null;
 	  sendMessage("Enter username:");
@@ -669,6 +676,8 @@ private void logTransaction(double prevBalance, String userDetailsFile, String t
       detailsWriter.close();
 	  
   }
+  
+ 
   /*
    * getMD5()
    * Takes a @param of a string
@@ -700,7 +709,7 @@ private void logTransaction(double prevBalance, String userDetailsFile, String t
       }
 	return generatedPassword;
   }
-  public void removeLineFromFile(String file, String lineToRemove) throws IOException {
+  private void removeLineFromFile(String file, String lineToRemove) throws IOException {
 
 	    try {
 

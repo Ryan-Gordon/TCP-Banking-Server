@@ -55,22 +55,16 @@ public class Requester{
 							
 							switch(message){
 							case "Change Customer Details":
+								//we need 2 next Lines here to flush the buffer
+								
 								message = (String)in.readObject();
 								System.out.println(message);
 								user_input.nextLine();
 								message = user_input.nextLine();
 								sendMessage(message);
 								
-								//address
-								message = (String)in.readObject();
-								System.out.println(message);
-								message = user_input.nextLine();
-								sendMessage(message);
-								//account number
-								message = (String)in.readObject();
-								System.out.println(message);
-								message = user_input.nextLine();
-								sendMessage(message);
+								recieveNRespond();
+								recieveNRespond();
 								
 								break;
 							case "Transactions":
@@ -136,6 +130,22 @@ public class Requester{
 			}
 		}
 	}
+	
+	/**
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
+	private void recieveNRespond() throws IOException, ClassNotFoundException {
+		message = (String)in.readObject();
+		System.out.println(message);
+		message = user_input.nextLine();
+		sendMessage(message);
+	}
+	public static void main(String args[])
+	{
+		Requester client = new Requester();
+		client.run();
+	}
 	void sendMessage(String msg)
 	{
 		try{
@@ -166,11 +176,7 @@ public class Requester{
 			user_input.nextLine();
 			message = user_input.nextLine();
 			sendMessage(message);
-			//address
-			message = (String)in.readObject();
-			System.out.println(message);
-			message = user_input.nextLine();
-			sendMessage(message);
+			recieveNRespond();
 			
 			
 			message = (String)in.readObject();
@@ -187,7 +193,6 @@ public class Requester{
 			
 		case "Register":
 			System.out.println("In register \n");
-			
 			registerUser();
 			break;
 			
@@ -197,10 +202,8 @@ public class Requester{
 			System.exit(0);
 			break;
 		default :
-			
 		}
 		return authenticated = false;
-		
 	}
 	private void registerUser() throws IOException, ClassNotFoundException {
 		//name
@@ -210,25 +213,13 @@ public class Requester{
 		message = user_input.nextLine();
 		sendMessage(message);
 		//address
-		message = (String)in.readObject();
-		System.out.println(message);
-		message = user_input.nextLine();
-		sendMessage(message);
-		//account number
-		message = (String)in.readObject();
-		System.out.println(message);
-		message = user_input.nextLine();
-		sendMessage(message);
+		recieveNRespond();
+		//accnum
+		recieveNRespond();
 		//username
-		message = (String)in.readObject();
-		System.out.println(message);
-		message = user_input.nextLine();
-		sendMessage(message);
+		recieveNRespond();
 		//password
-		message = (String)in.readObject();
-		System.out.println(message);
-		message = user_input.nextLine();
-		sendMessage(message);
+		recieveNRespond();
 		
 		
 		
@@ -236,9 +227,5 @@ public class Requester{
 		message = (String)in.readObject();
 		System.out.println(message);
 	}
-	public static void main(String args[])
-	{
-		Requester client = new Requester();
-		client.run();
-	}
+	
 }
