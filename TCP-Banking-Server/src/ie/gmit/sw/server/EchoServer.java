@@ -18,6 +18,7 @@ import java.nio.channels.OverlappingFileLockException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -214,7 +215,8 @@ class ClientServiceThread extends Thread {
 		case 2: 
 			sendMessage("Transactions");
 			//open file 
-			ArrayList<String> al= new ArrayList<String>();
+			List<String> al= new ArrayList<String>();
+			
 			  String line = "";
 		      String cvsSplitBy = ",";
 		      BufferedReader br = new BufferedReader(new FileReader("userTransactions.csv"));
@@ -226,11 +228,16 @@ class ClientServiceThread extends Thread {
 		              // use comma as separator
 		              String loginDetails[] = line.split(cvsSplitBy);
 		              if(loginDetails[0].equals(username)){
-		            	  
-		            		 al.add("Transaction Amount :" +loginDetails[2]+"\t Previous Balance: "+ loginDetails[3]+"\t New Balance: "+ loginDetails[4] + "\n") ;
-		            		 System.out.println("Transaction Amount :" +loginDetails[2]+"\t Previous Balance: "+ loginDetails[3]+"\t New Balance: "+ loginDetails[4]);
-		          }
-		              System.out.println(al);
+		            		  al.add("Transaction Type:"+loginDetails[5]+ " Transaction Amount :" +loginDetails[2]+"\t Previous Balance: "+ loginDetails[3]+"\t New Balance: "+ loginDetails[4] + "\n") ;
+			            		 System.out.println("Transaction Amount :" +loginDetails[2]+"\t Previous Balance: "+ loginDetails[3]+"\t New Balance: "+ loginDetails[4]);
+			          
+		              }
+		              if(al.size()>10){
+		            	  System.out.print("Arraylist bigger than 10");
+		            	  al = al.subList(al.size()-10, al.size());
+		              }
+		              System.out.println(al.toString());
+		              
 		          }
 
 		      } catch (IOException e) {
@@ -239,6 +246,7 @@ class ClientServiceThread extends Thread {
 		      finally{
 		    	  br.close();
 		    	  sendMessage(al.toString());
+		    	  al.clear();
 		      }
 			
 			break;
@@ -363,7 +371,7 @@ private void depositFunds() throws IOException, ClassNotFoundException {
 	
 	//if the transaction is successful we want to log the transaction details to the file
 	if(transactionSuccessful){
-		logTransaction(prevBalance ,"userDetails.csv", "userTransactions.csv");
+		logTransaction(prevBalance ,"userDetails.csv", "userTransactions.csv", "Deposit");
 		  
 		  
 	}
@@ -387,7 +395,7 @@ private void withdrawFunds() throws IOException, ClassNotFoundException {
 	
 	//if the transaction is successful we want to log the transaction details to the file
 	if(transactionSuccessful){
-		logTransaction(prevBalance ,"userDetails.csv", "userTransactions.csv");
+		logTransaction(prevBalance ,"userDetails.csv", "userTransactions.csv", "Withdrawl");
 		  
 		  //TODO attempt to change balance in userDetails file
 	}
@@ -401,7 +409,7 @@ private void withdrawFunds() throws IOException, ClassNotFoundException {
  * @throws IOException
  * @throws FileNotFoundException
  */
-private void logTransaction(double prevBalance, String userDetailsFile, String transactionFile) throws IOException, FileNotFoundException {
+private void logTransaction(double prevBalance, String userDetailsFile, String transactionFile, String transactionType) throws IOException, FileNotFoundException {
 	//log the transaction into the transaction file
 	 FileWriter transWriter = new FileWriter(transactionFile,true);
 	 StringBuilder detailsSB = new StringBuilder();
@@ -415,6 +423,8 @@ private void logTransaction(double prevBalance, String userDetailsFile, String t
 	  detailsSB.append(prevBalance);
 	  detailsSB.append(',');
 	  detailsSB.append(account.getBalance());
+	  detailsSB.append(',');
+	  detailsSB.append(transactionType);
 	  detailsSB.append("\r\n");
 
 	  transWriter.write(detailsSB.toString());
