@@ -73,6 +73,10 @@ public class Requester{
 								sendMessage(message);
 								
 								break;
+							case "Transactions":
+								message = (String)in.readObject();
+								System.out.println(message);
+								break;
 							case "Withdraw":
 								message = (String)in.readObject();
 								System.out.println(message);

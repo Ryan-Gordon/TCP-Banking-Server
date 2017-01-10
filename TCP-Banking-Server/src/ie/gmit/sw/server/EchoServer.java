@@ -17,6 +17,7 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -211,6 +212,34 @@ class ClientServiceThread extends Thread {
 			changeCustomerDetails();
 			break;
 		case 2: 
+			sendMessage("Transactions");
+			//open file 
+			ArrayList<String> al= new ArrayList<String>();
+			  String line = "";
+		      String cvsSplitBy = ",";
+		      BufferedReader br = new BufferedReader(new FileReader("userTransactions.csv"));
+
+		      try  {
+		    	  
+		          while ((line = br.readLine()) != null) {
+
+		              // use comma as separator
+		              String loginDetails[] = line.split(cvsSplitBy);
+		              if(loginDetails[0].equals(username)){
+		            	  
+		            		 al.add("Transaction Amount :" +loginDetails[2]+"\t Previous Balance: "+ loginDetails[3]+"\t New Balance: "+ loginDetails[4] + "\n") ;
+		            		 System.out.println("Transaction Amount :" +loginDetails[2]+"\t Previous Balance: "+ loginDetails[3]+"\t New Balance: "+ loginDetails[4]);
+		          }
+		              System.out.println(al);
+		          }
+
+		      } catch (IOException e) {
+		          e.printStackTrace();
+		      }
+		      finally{
+		    	  br.close();
+		    	  sendMessage(al.toString());
+		      }
 			
 			break;
 		case 3:
@@ -372,7 +401,7 @@ private void withdrawFunds() throws IOException, ClassNotFoundException {
  * @throws IOException
  * @throws FileNotFoundException
  */
-private void logTransaction(double prevBalance, String transactionFile, String userDetailsFile) throws IOException, FileNotFoundException {
+private void logTransaction(double prevBalance, String userDetailsFile, String transactionFile) throws IOException, FileNotFoundException {
 	//log the transaction into the transaction file
 	 FileWriter transWriter = new FileWriter(transactionFile,true);
 	 StringBuilder detailsSB = new StringBuilder();
