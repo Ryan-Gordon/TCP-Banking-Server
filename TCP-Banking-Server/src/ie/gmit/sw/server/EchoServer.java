@@ -35,12 +35,12 @@ public class EchoServer {
     
   }
 }
-
 /**
- * Inner class used for a customers account
- * 
+ * Inner class used for a customers account.
+ * @author RyanGordon
+ *
+ * Contains functions for deposits and withdrawls
  */
-//An inner class for account
   class Account {
  // Create a new lock
  private static Lock lock = new ReentrantLock();
@@ -55,13 +55,14 @@ public class EchoServer {
  }
 
  public boolean withdraw(double amount) {
-   lock.lock();
+   lock.lock(); //lock the lock
    System.out.println("Locked the account for "+Thread.currentThread().getName());
    try {
      if (balance < (amount-1000)){
     	 System.out.println("Insufficient funds even with credit limit");
     	 return false;
      }
+     //if user has enough funds 
      else{
 	   balance -= amount;
 	   System.out.println("\t\t\tWithdraw " + amount +
@@ -73,10 +74,10 @@ public class EchoServer {
    finally {
      lock.unlock(); 
    }
- }
+ }//withdraw
 
  public boolean deposit(double amount) {
-   lock.lock(); 
+   lock.lock(); //lock the lock
    System.out.println("Locked the account for "+Thread.currentThread().getName());
    try {
      balance += amount;
@@ -91,14 +92,21 @@ public class EchoServer {
 	 System.out.println("Unlocked account for other threads");
      lock.unlock();
    }
- }
+ }//deposit
 
 public void setBalance(double balance2) {
 	this.balance = balance2;
-}
+}//used to update the user balance during transactions
 }// end Account class
 
-
+/**
+ * Inner class Thread used to handle a client.
+ * 
+ * Each thread has its own set of variables as that is thread safe.
+ * May abstract these vars into another class
+ * @author college
+ *
+ */
 class ClientServiceThread extends Thread {
   private Socket clientSocket;
   private String message;
@@ -111,6 +119,7 @@ class ClientServiceThread extends Thread {
    * These are the user variables.
    * Started by using a Inner class however the varaible within were not thread safe
    * Local variables are thread safe however.
+   * May try to change into a class again
    */
   private String name;
   private String address;
@@ -137,6 +146,13 @@ class ClientServiceThread extends Thread {
 			ioException.printStackTrace();
 		}
 	}
+  /*
+   * When running the thread we establish a handshake model for communication
+   * Messages are sent, confirmed with a confirmation message and then performed.
+   * The client has no access to some methods unless they are
+   * 1. Authenticated with the server, presented with the option and confirmed that the operation can be performed
+   * @see java.lang.Thread#run()
+   */
   public void run() {
     System.out.println("Accepted Client : ID - " + clientID + " : Address - "
         + clientSocket.getInetAddress().getHostName());
@@ -155,16 +171,14 @@ class ClientServiceThread extends Thread {
 				
 				System.out.println("client>"+clientID+"  "+ message);
 				
-				//if (message.equals("bye"))
+				//show the login menu to the user until the successfully authenticate
 				while(authenticated == false){
-					
-						authenticated = loginMenu();
-						
-						if(message.equals("bye")){
-							break;
-						}
-				
+					authenticated = loginMenu();
+					if(message.equals("bye")){
+						break;
+					}
 				}
+				//Check if the client has authenticated or not, if not they may have quit
 				if (authenticated ==true){
 					//presentCustomerMenu
 					customerMenu();
@@ -180,11 +194,21 @@ class ClientServiceThread extends Thread {
       
 		System.out.println("Ending Client : ID - " + clientID + " : Address - "
 		        + clientSocket.getInetAddress().getHostName());
-		
+		//close the client for good manners. Client will have already quit by now.
     } catch (Exception e) {
       e.printStackTrace();
     }
   }
+  /*
+   * Customer menu is used after a client has authenticated with the server.
+   * 
+   * It presents a number of options for the user.
+   * 1. Change the details of the logged in user on the server.
+   * 2. View all transactions or just the last ten if there are more than that
+   * 3. Attempt to deposit money into the users account and update the details file
+   * 4. Attempt to withdraw money from the users account and update the details file
+   * 5. Allow the client the option to quit
+   */
   void customerMenu() throws ClassNotFoundException, IOException{
 	  int choice;
 	  String loginMenu = "\n Enter choice:  \n"
@@ -210,44 +234,51 @@ class ClientServiceThread extends Thread {
 		case 1:
 			//change customer details
 			sendMessage("Change Customer Details");
-			changeCustomerDetails();
+			changeCustomerDetails(); // Prompt user for newdetails and change these on server side
 			break;
 		case 2: 
 			sendMessage("Transactions");
-			printTransactionLog();
+			printTransactionLog(); // View all transactions or just the last ten if there are more than that
 			
 			break;
 		case 3:
 			sendMessage("Deposit");
-			depositFunds();
+			depositFunds(); //prompt for amount and attempt to do a deposit into users account
 			
 			break;
 			
 		case 4:
 			sendMessage("Withdraw");
-			//a method which attempts to process a withdrawl of funds from the customers account
-			withdrawFunds();
+			withdrawFunds(); //prompt for amount and attempt to do a withdrawl from users account
 			break;
 		case 5:
 			sendMessage("Quit!");
-			message = (String)in.readObject();
+			message = (String)in.readObject(); //receive client confirmation of quit
 			break;
 			
 		default:
 			sendMessage("Invalid command");
-			customerMenu();
+			customerMenu(); //show menu again if invalid input
 		}
   }
 /**
+ * Attempts to find and display all last transactions from the user.
+ * 
+ * Opens the transaction file, attempts to find transactions from the user using username as a query
+ * Adds all transactions from the user to an ArrayList
+ * 
+ * If the array list ends up being larger than 10 we will change the arraylist
+ * We change the arraylist into a 10 long subset of itself
+ * The ten we take come from the end of the Array for the most recent ones 
  * @throws FileNotFoundException
  * @throws IOException
  */
 private void printTransactionLog() throws FileNotFoundException, IOException {
-	List<String> al= new ArrayList<String>();
+	List<String> transactionList= new ArrayList<String>();
 	
 	  String line = "";
 	  String cvsSplitBy = ",";
-	  BufferedReader br = new BufferedReader(new FileReader("userTransactions.csv"));
+	  BufferedReader br = new BufferedReader(new FileReader("userTransactions.csv")); //the file containing all transaxtions 
 
 	  try  {
 		  
@@ -256,16 +287,15 @@ private void printTransactionLog() throws FileNotFoundException, IOException {
 	          // use comma as separator
 	          String loginDetails[] = line.split(cvsSplitBy);
 	          if(loginDetails[0].equals(username)){
-	        		  al.add("Transaction Type:"+loginDetails[5]+ " Transaction Amount :" +loginDetails[2]+"\t Previous Balance: "+ loginDetails[3]+"\t New Balance: "+ loginDetails[4] + "\n") ;
-	            		 System.out.println("Transaction Amount :" +loginDetails[2]+"\t Previous Balance: "+ loginDetails[3]+"\t New Balance: "+ loginDetails[4]);
-	          
+	        		  transactionList.add("Transaction Type:"+loginDetails[5]+ " Transaction Amount :" +loginDetails[2]+"\t Previous Balance: "+ loginDetails[3]+"\t New Balance: "+ loginDetails[4] + "\n") ;
+	          //Add the transactions to the list as a string describing each of the parameters
 	          }
-	          if(al.size()>10){
+	          if(transactionList.size()>10){
 	        	  System.out.print("Arraylist bigger than 10");
-	        	  al = al.subList(al.size()-10, al.size());
+	        	  transactionList = transactionList.subList(transactionList.size()-10, transactionList.size()); //change the array into a subset of itself 
 	          }
-	          System.out.println(al.toString());
-	          
+	          System.out.println(transactionList.toString());
+	          //show the list to server, not really needed
 	      }
 
 	  } catch (IOException e) {
@@ -273,25 +303,31 @@ private void printTransactionLog() throws FileNotFoundException, IOException {
 	  }
 	  finally{
 		  br.close();
-		  sendMessage(al.toString());
-		  al.clear();
+		  sendMessage(transactionList.toString()); //send the list to the client
+		  transactionList.clear(); //clear the list for next request incase there are more recent transactions 
 	  }
 }
 
 /**
+ * Allows the logged in user to change the details for their account.
+ * 
+ * Using this the client can change their name, address or account number.
+ * The username is the unique identifier for the account and that is what cant be changed.
  * @throws IOException
  * @throws ClassNotFoundException
  * @throws FileNotFoundException
  */
 private void changeCustomerDetails() throws IOException, ClassNotFoundException, FileNotFoundException {
+	//Prompt for new name and save this to var
 	sendMessage("Current Name: "+ name+"\n Enter new name: ");
 	readMessage();
 	name = message;
 	
+	//Prompt for new address and save this to var
 	sendMessage("Current Address: "+ address+"\n Enter new address: ");
 	readMessage();
 	address = message;
-	
+	//Prompt for new accnum and save this to var
 	sendMessage("Current Account Number: "+ accnum+"\n Enter new account number (We find your customer record via username): ");
 	readMessage();
 	accnum = message;
@@ -302,7 +338,7 @@ private void changeCustomerDetails() throws IOException, ClassNotFoundException,
 		
 	    FileChannel channel = new RandomAccessFile(file, "rw").getChannel();
 		FileLock lock = channel.tryLock();
-		//open file \
+		
 	  	String line = "";
 	    String cvsSplitBy = ",";
 		BufferedReader detailsReader = new BufferedReader(new FileReader(file));
@@ -310,8 +346,8 @@ private void changeCustomerDetails() throws IOException, ClassNotFoundException,
 		  while ((line = detailsReader.readLine()) != null) {
 			  String userDetails[] = line.split(cvsSplitBy);
 			  if(userDetails[0].equals(username)){
-				  removeLineFromFile("userDetails.csv", line);
-				  FileWriter detailsWriter = new FileWriter(file,true);
+				  removeLineFromFile("userDetails.csv", line); //a method used to find the previous details from the file and delete it
+				  FileWriter detailsWriter = new FileWriter(file,true); //append means we just add the line to the end
 				  //we have found the user in the system after login
 				  System.out.println("Found user in system changing details");
 				  userDetails[1]= name ;
@@ -319,12 +355,12 @@ private void changeCustomerDetails() throws IOException, ClassNotFoundException,
 				  userDetails[3] = accnum;
 				  
 				  System.out.println("Changing details now");
-				  StringBuilder sb = new StringBuilder();
+				  StringBuilder sb = new StringBuilder(); //string builder used to prepare the line
 			      
 				  
 				  //mtehod used to find the previous customer details and remove them 
 				  
-				  //TODO add a lock
+				  //We append the string to what a csv should look like
 			      
 			      sb.append(userDetails[0]);
 			      sb.append(',');
@@ -337,6 +373,8 @@ private void changeCustomerDetails() throws IOException, ClassNotFoundException,
 			      sb.append(userDetails[4]);
 			      sb.append("\r\n");
 				  System.out.println(sb.toString());
+				  
+				  //print this string to the file and close the writer
 				  detailsWriter.write(sb.toString());
 				  detailsWriter.close();
 				  break;
@@ -344,7 +382,7 @@ private void changeCustomerDetails() throws IOException, ClassNotFoundException,
 	}//while
 		  detailsReader.close();
 		  
-		  lock.release();
+		  lock.release(); //unlock the lock
 		  channel.close();
 	}//end try
 	catch (OverlappingFileLockException e) {
@@ -356,6 +394,12 @@ private void changeCustomerDetails() throws IOException, ClassNotFoundException,
 }
 
 /**
+ * A function used to attempt to deposit to a ThreadSafe account object.
+ * 
+ * Prompts to user for deposit amount.
+ * Server then changes the user balance and updates the details file to reflect this.
+ * User is prompted with a status messages and a new balance.
+ * 
  * @throws IOException
  * @throws ClassNotFoundException
  */
@@ -377,6 +421,12 @@ private void depositFunds() throws IOException, ClassNotFoundException {
 }
 
 /**
+ * A function used to attempt to withdraw from a ThreadSafe account object.
+ * 
+ * Prompts to user for withdrawal amount.
+ * Server then changes the user balance and updates the details file to reflect this.
+ * User is prompted with a status messages and a new balance.
+ * 
  * @throws IOException
  * @throws ClassNotFoundException
  */
@@ -400,6 +450,9 @@ private void withdrawFunds() throws IOException, ClassNotFoundException {
 }
 
 /**
+ * Used to log a transaction (Deposit, withdraw) to a transaction file.
+ *
+ * 
  * @param prevBalance
  * @param userDetailsFile
  * @param transactionFile
@@ -485,6 +538,16 @@ private void logTransaction(double prevBalance, String userDetailsFile, String t
 	  }
 }
 
+/**
+ * The initial message menu we provide to the client.
+ * 
+ * Until the client authenticated with the server
+ * We simply show them this menu to register or login.
+ * 
+ * @return
+ * @throws ClassNotFoundException
+ * @throws IOException
+ */
   boolean loginMenu() throws ClassNotFoundException, IOException{
 	  int choice;
 		String loginMenu = "\n Enter choice:  \n"
@@ -532,7 +595,19 @@ private void logTransaction(double prevBalance, String userDetailsFile, String t
   
   
   
-  //TODO clean up login and register remove print statments
+  /**
+   * Used to check the login file and attempt to verify the login info provided.
+   * 
+   * Method opens the login file and searches for the provided username.
+   * If the provided username is found we then check this line for the password.
+   * 
+   * The plain text password is never saved on the server, instead we save the MD5 hash of the password.
+   * Using the provided password we generate a MD5 hash of this and check it with the hash on file.
+   * 
+   * @return
+   * @throws ClassNotFoundException
+   * @throws IOException
+   */
   boolean login() throws ClassNotFoundException, IOException{
 	  String hashedPassword = null;
 	  sendMessage("Enter username:");
@@ -595,6 +670,19 @@ private void logTransaction(double prevBalance, String userDetailsFile, String t
       }
 	return false;
   }
+  /**
+   * Used to take details and register a new user.
+   * 
+   * Method prompts the user for account info
+   * Once all info is provided the system logs this into the login file and returns the user to the customer menu
+   * 
+   * The plain text password is never saved on the server, instead we save the MD5 hash of the password.
+   * 
+   * 
+   * @return
+   * @throws ClassNotFoundException
+   * @throws IOException
+   */
   void register() throws ClassNotFoundException, IOException{
 	  String hashedPassword = null;
 	  sendMessage("First off what is your name?");
