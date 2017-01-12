@@ -118,7 +118,7 @@ class ClientServiceThread extends Thread {
   private String username;
   private String password;
   private double balance;
-  private static Account account = new Account();
+  private Account account = new Account();
   
 
   ClientServiceThread(Socket s, int i) {
@@ -214,7 +214,6 @@ class ClientServiceThread extends Thread {
 			break;
 		case 2: 
 			sendMessage("Transactions");
-			//open file 
 			printTransactionLog();
 			
 			break;
@@ -286,18 +285,15 @@ private void printTransactionLog() throws FileNotFoundException, IOException {
  */
 private void changeCustomerDetails() throws IOException, ClassNotFoundException, FileNotFoundException {
 	sendMessage("Current Name: "+ name+"\n Enter new name: ");
-	message = (String)in.readObject();
-	System.out.println(message);
+	readMessage();
 	name = message;
 	
 	sendMessage("Current Address: "+ address+"\n Enter new address: ");
-	message = (String)in.readObject();
-	System.out.println(message);
+	readMessage();
 	address = message;
 	
 	sendMessage("Current Account Number: "+ accnum+"\n Enter new account number (We find your customer record via username): ");
-	message = (String)in.readObject();
-	System.out.println(message);
+	readMessage();
 	accnum = message;
 
 	try {
@@ -369,8 +365,7 @@ private void depositFunds() throws IOException, ClassNotFoundException {
 	double prevBalance = account.getBalance();
 	boolean transactionSuccessful;
 	
-	message = (String)in.readObject();
-	System.out.println(message);
+	readMessage();
 	transactionSuccessful =  account.deposit(Double.parseDouble(message));
 	
 	//if the transaction is successful we want to log the transaction details to the file
@@ -392,8 +387,7 @@ private void withdrawFunds() throws IOException, ClassNotFoundException {
 	boolean transactionSuccessful;
 	
 	sendMessage("You have "+prevBalance+" balance and a 1000 credit limit");
-	message = (String)in.readObject();
-	System.out.println(message);
+	readMessage();
 	// Method which returns 
 	transactionSuccessful = account.withdraw(Double.parseDouble(message));
 	
@@ -542,12 +536,10 @@ private void logTransaction(double prevBalance, String userDetailsFile, String t
   boolean login() throws ClassNotFoundException, IOException{
 	  String hashedPassword = null;
 	  sendMessage("Enter username:");
-	  message = (String)in.readObject();
-	  System.out.println(message);
+	  readMessage();
 	  username = message;
 	  sendMessage("Password:");
-	  message = (String)in.readObject();
-	  System.out.println(message);
+	  readMessage();
 	  password = message;
 	  
 	  hashedPassword = getMD5(password);
@@ -608,32 +600,26 @@ private void logTransaction(double prevBalance, String userDetailsFile, String t
 	  sendMessage("First off what is your name?");
 	  
 	  
-	  message = (String)in.readObject();
-	  System.out.println(message);
+	  readMessage();
 	  name = message;
- sendMessage("what is your address?");
+	  sendMessage("what is your address?");
 	  
-	  //TODO clean code
-	  message = (String)in.readObject();
-	  System.out.println(message);
+	  readMessage();
 	  address = message;
- sendMessage(" what is your account number?");
+	  sendMessage(" what is your account number?");
 	  
 	  
-	  message = (String)in.readObject();
-	  System.out.println(message);
+	  readMessage();
 	  accnum = message;
 	  sendMessage("Choose a username?");
 	  
 	  
-	  message = (String)in.readObject();
-	  System.out.println(message);
+	  readMessage();
 	  username = message;
 	  sendMessage("Choose password?");
 	  
 	  
-	  message = (String)in.readObject();
-	  System.out.println(message);
+	  readMessage();
 	  password = message;
 	  
 	  balance = (double)(Math.random() * 10) + 1;
@@ -676,6 +662,14 @@ private void logTransaction(double prevBalance, String userDetailsFile, String t
       detailsWriter.close();
 	  
   }
+/**
+ * @throws IOException
+ * @throws ClassNotFoundException
+ */
+private void readMessage() throws IOException, ClassNotFoundException {
+	message = (String)in.readObject();
+	  System.out.println(message);
+}
   
  
   /*
