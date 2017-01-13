@@ -59,11 +59,15 @@ You can then decide whether you want to run the application locally or remotely.
 ###### Remotely
 To run the server remotely simply start the client as follows.
 ```
-java ie.gmit.sw.client.Runner
+java ie.gmit.sw.client.Requester
 ```
+The default IP address applied in the source code represents a currently running EC2 instance of the bank server
 
 ###### Locally
 To run the server locally you fill first have to run the server as follows.
+Run the server on localhost
+
+In Requester.java edit either the ipaddress value on line 17 to "localhost" or on line 27 change this to "localhost".
 
 
 #### Conclusion

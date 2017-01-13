@@ -14,7 +14,7 @@ public class Requester{
 	Requester()
 	{
 		user_input = new Scanner(System.in);
-		ipaddress = "54.213.87.187";
+		ipaddress = "54.191.196.154"; //change this to the IP you want to use
 		authenticated = false;
 	}
 	void run()
@@ -22,7 +22,7 @@ public class Requester{
 		try{
 			//1. creating a socket to connect to the server
 			
-			requestSocket = new Socket("localhost", 2004);
+            requestSocket = new Socket(ipaddress, 2004); //runs on local host at the moment but tested working on remote computer
 			System.out.println("Connected to "+ipaddress+" in port 2004");
 			//2. get Input and Output streams
 			out = new ObjectOutputStream(requestSocket.getOutputStream());
