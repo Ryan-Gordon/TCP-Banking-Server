@@ -761,6 +761,8 @@ private void readMessage() throws IOException, ClassNotFoundException {
   
  
   /*
+   * A utility method used to get the MD5 hash string of a string
+   * 
    * getMD5()
    * Takes a @param of a string
    * Then gets the bytes for this string 
@@ -791,6 +793,13 @@ private void readMessage() throws IOException, ClassNotFoundException {
       }
 	return generatedPassword;
   }
+  /**
+   * Used to query a file for a line and remove it.
+   * 
+   * @param file
+   * @param lineToRemove
+   * @throws IOException
+   */
   private void removeLineFromFile(String file, String lineToRemove) throws IOException {
 
 	    try {
